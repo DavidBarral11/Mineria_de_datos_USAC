@@ -1,0 +1,67 @@
+
+req <- c("readxl","dplyr","ggplot2","cluster","tidyr")
+new <- req[!(req %in% installed.packages()[,1])]
+if (length(new)) install.packages(new, dependencies = TRUE)
+invisible(lapply(req, library, character.only = TRUE))
+
+set.seed(123)
+
+RUTA <- "C:/Users/David/Downloads/base-de-datos-violencia-intrafamiliar-ano-2024_v3.xlsx"
+df <- readxl::read_excel(RUTA)
+
+stopifnot("Falta VIC_EDAD" = "VIC_EDAD" %in% names(df))
+stopifnot("Falta AGR_EDAD" = "AGR_EDAD" %in% names(df))
+
+
+cols <- names(df)
+cand_vic_sexo <- cols[grepl("^VIC_.*(SEXO|SEX|GEN|GENERO)$", cols, ignore.case = TRUE)]
+if (length(cand_vic_sexo) == 0) cand_vic_sexo <- cols[grepl("(VIC|VICT).*?(SEXO|SEX|GEN|GENERO)", cols, ignore.case = TRUE)]
+stopifnot("Falta columna de sexo de la víctima" = length(cand_vic_sexo) >= 1)
+col_vic_sexo <- cand_vic_sexo[1]
+
+cand_agr_sexo <- cols[grepl("^AGR_.*(SEXO|SEX|GEN|GENERO)$", cols, ignore.case = TRUE)]
+if (length(cand_agr_sexo) == 0) cand_agr_sexo <- cols[grepl("(AGR|AGRES).*?(SEXO|SEX|GEN|GENERO)", cols, ignore.case = TRUE)]
+stopifnot("Falta columna de sexo del agresor" = length(cand_agr_sexo) >= 1)
+col_agr_sexo <- cand_agr_sexo[1]
+
+
+dat <- df |>
+  transmute(
+    VIC_EDAD = suppressWarnings(as.numeric(VIC_EDAD)),
+    AGR_EDAD = suppressWarnings(as.numeric(AGR_EDAD)),
+    VIC_SEXO = suppressWarnings(as.numeric(.data[[col_vic_sexo]])),
+    AGR_SEXO = suppressWarnings(as.numeric(.data[[col_agr_sexo]]))
+  ) |>
+  tidyr::drop_na(VIC_EDAD, AGR_EDAD, VIC_SEXO, AGR_SEXO) |>
+  dplyr::filter(VIC_SEXO == 1, AGR_SEXO == 1)
+
+stopifnot("Datos insuficientes tras filtrar a solo masculinos" = nrow(dat) >= 10)
+
+
+X <- scale(dat[, c("VIC_EDAD","AGR_EDAD")])
+
+K <- 3  # ajusta si deseas otro K
+km <- kmeans(X, centers = K, nstart = 25)
+dat$cluster <- factor(km$cluster)
+
+
+centroids <- dat |>
+  dplyr::group_by(cluster) |>
+  dplyr::summarise(
+    VIC_EDAD = mean(VIC_EDAD),
+    AGR_EDAD = mean(AGR_EDAD),
+    .groups = "drop"
+  )
+
+
+p1 <- ggplot(dat, aes(x = VIC_EDAD, y = AGR_EDAD, color = cluster)) +
+  geom_point(alpha = 0.65, size = 1.8) +
+  geom_point(data = centroids, aes(x = VIC_EDAD, y = AGR_EDAD),
+             inherit.aes = FALSE, color = "black", size = 4, shape = 17) +
+  labs(title = paste0("K-Means (K=", K, ") - Edad víctima vs Edad agresor (solo masculinos)"),
+       x = "Edad víctima (años)", y = "Edad agresor (años)") +
+  theme_minimal()
+
+print(p1)
+
+
