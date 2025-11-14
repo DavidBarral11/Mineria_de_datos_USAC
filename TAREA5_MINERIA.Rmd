@@ -1,0 +1,112 @@
+library(readxl)
+
+data <- read_excel("C:\\Users\\David\\Downloads\\base-de-datos-violencia-intrafamiliar-ano-2024_v3.xlsx")
+
+
+library(rpart)
+library(rpart.plot)
+
+data.frame(1:ncol(data), colnames(data))
+
+
+#PRIMER ARBOL 
+
+
+
+data$otras_victimas_bin <- ifelse(
+  data$OTRAS_VICTIMAS == 0, 0,
+  ifelse(data$OTRAS_VICTIMAS >= 1 & data$OTRAS_VICTIMAS <= 20, 1, NA)
+)
+
+data$otras_victimas_bin <- as.factor(data$otras_victimas_bin)
+
+
+data_ov <- subset(data, !is.na(otras_victimas_bin))
+
+arbol_ov <- rpart(
+  otras_victimas_bin ~
+    VIC_EDAD +
+    TOTAL_HIJOS +
+    VIC_REL_AGR +
+    AGRESORES_OTROS_TOTAL +
+    HEC_AREA +
+    HEC_TIPAGRE +
+    ARTICULOVIF1 +
+    ARTICULOCODPEN1,
+  data = data_ov,
+  method = "class"
+)
+
+rpart.plot(arbol_ov, type = 2, extra = 0, under = TRUE,
+           fallen.leaves = TRUE, box.palette = "BuGn",
+           main = "Casos con múltiples víctimas", cex = 0.5)
+
+caso_ov <- data.frame(
+  VIC_EDAD = 30,
+  TOTAL_HIJOS = 2,
+  VIC_REL_AGR = 3,
+  AGRESORES_OTROS_TOTAL = 1,
+  HEC_AREA = 1,
+  HEC_TIPAGRE = 2,
+  ARTICULOVIF1 = 7,
+  ARTICULOCODPEN1 = 0
+)
+
+result_ov <- predict(arbol_ov, caso_ov, type = "prob")
+result_ov              
+
+
+
+
+#SEGUNDO ARBOL
+
+
+
+data$victima_reporta <- ifelse(data$QUIEN_REPORTA == 1, 1, 0)
+data$victima_reporta <- as.factor(data$victima_reporta)
+
+
+data$OTRAS_VICTIMAS_LIMPIO <- ifelse(
+  data$OTRAS_VICTIMAS == 99, NA,
+  data$OTRAS_VICTIMAS
+)
+
+arbol_denuncia <- rpart(
+  victima_reporta ~
+    VIC_SEXO +
+    VIC_EDAD +
+    VIC_ESCOLARIDAD +
+    VIC_EST_CIV +
+    TOTAL_HIJOS +
+    OTRAS_VICTIMAS_LIMPIO +
+    VIC_TRABAJA +
+    VIC_DEDICA +
+    HEC_AREA +
+    HEC_TIPAGRE +
+    HEC_RECUR_DENUN,
+  data = data,
+  method = "class"
+)
+
+rpart.plot(arbol_denuncia, type = 2, extra = 0, under = TRUE,
+           fallen.leaves = TRUE, box.palette = "BuGn",
+           main = "¿Quién reporta: víctima u otra persona?", cex = 0.5)
+
+caso_denuncia <- data.frame(
+  VIC_SEXO = 2,
+  VIC_EDAD = 28,
+  VIC_ESCOLARIDAD = 57,
+  VIC_EST_CIV = 2,
+  TOTAL_HIJOS = 1,
+  OTRAS_VICTIMAS_LIMPIO = 0,
+  VIC_TRABAJA = 4,
+  VIC_DEDICA = 3,
+  HEC_AREA = 1,
+  HEC_TIPAGRE = 1,
+  HEC_RECUR_DENUN = 1
+)
+
+result_denuncia <- predict(arbol_denuncia, caso_denuncia, type = "prob")
+result_denuncia         
+
+
