@@ -1,0 +1,51 @@
+
+library(arules)
+library(readxl)
+
+
+datos <- read_excel("C:\\Users\\David\\Downloads\\graduados-superior-2023.xlsx")
+
+reglas <- apriori(datos, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas[0:130])
+
+data.frame(1:ncol(datos), colnames(datos))
+
+reglas_2 <- apriori(datos, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas_2[0:44])
+
+datos$Region_Departamental <- ifelse(datos$Departamento == "Guatemala", "Guatemala", "Resto del país")
+
+
+datos_gt <- subset(datos, Region_Departamental == "Guatemala")
+data.frame(1:ncol(datos_gt), colnames(datos_gt))
+
+
+
+datos_ing_gt <- subset(datos_gt, grepl("Licenciatura en Ingenieria", CARRERA, ignore.case = TRUE))
+data.frame(1:ncol(datos_ing_gt), colnames(datos_ing_gt))
+reglas_ing_gt <- apriori(datos_ing_gt, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas_ing_gt[0:40])
+
+
+datos_lfa_gt <- subset(datos_gt, CARRERA == "Licenciatura en Fisica")
+data.frame(1:ncol(datos_lfa_gt), colnames(datos_lfa_gt))
+reglas_lfa_gt <- apriori(datos_lfa_gt, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas_lfa_gt[0:40])
+
+#Resto de departamentos
+datos_resto <- subset(datos, Region_Departamental == "Resto del país")
+data.frame(1:ncol(datos_resto), colnames(datos_resto))
+datos_resto <- datos_resto[, -1]
+
+
+datos_ing_rest <- subset(datos_resto, grepl("Ingenier", CARRERA, ignore.case = TRUE))
+data.frame(1:ncol(datos_ing_rest), colnames(datos_ing_rest))
+reglas_ing_rest <- apriori(datos_ing_rest, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas_ing_rest[0:40])
+
+
+datos_lfa_rest <- subset(datos_resto, CARRERA == "Licenciatura en Física")
+data.frame(1:ncol(datos_lfa_rest), colnames(datos_lfa_rest))
+reglas_lfa_rest <- apriori(datos_lfa_rest, parameter = list(support=0.2, confidence = 0.5)) 
+inspect(reglas_lfa_rest[0:40])
+
