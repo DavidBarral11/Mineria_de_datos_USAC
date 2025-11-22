@@ -1,0 +1,56 @@
+
+library(randomForest)
+library(readxl)
+
+data <- read_excel('C:/Users/David/Downloads/base-de-datos-violencia-intrafamiliar-ano-2024_v3.xlsx')
+
+datar <- data[, c("VIC_EDAD", "VIC_ESCOLARIDAD", "VIC_TRABAJA", "VIC_OCUP",
+                  "AGR_EDAD", "AGR_TRABAJA", "HEC_TIPAGRE", "AGR_SEXO")]
+
+datar$AGR_SEXO <- as.factor(datar$AGR_SEXO)
+
+datar <- na.omit(datar)
+
+set.seed(42)
+
+datar <- datar[sample(1:nrow(datar)),]
+
+index <- 1:round(nrow(datar)*0.7)
+train <- datar[index,]
+test <- datar[-index,]
+
+bosque <- randomForest(AGR_SEXO ~
+        VIC_EDAD +
+        VIC_ESCOLARIDAD +
+        VIC_TRABAJA +
+        VIC_OCUP +
+        AGR_EDAD +
+        AGR_TRABAJA +
+        HEC_TIPAGRE,
+        data = train,
+        ntree = 100, mtry = 4)
+
+prueba <- predict(bosque, test)
+prueba
+
+matriz <- table(test$AGR_SEXO, prueba)
+matriz
+
+pre <- sum(diag(matriz)) / sum(matriz)
+pre
+
+persona <- data.frame(
+  VIC_EDAD = 30,
+  VIC_ESCOLARIDAD = 29,
+  VIC_TRABAJA = 2,
+  VIC_OCUP = 5153,
+  AGR_EDAD = 35,
+  AGR_TRABAJA = 1,
+  HEC_TIPAGRE = 3
+)
+
+result2 <- predict(bosque, persona, type = "prob")
+result2
+
+plot(bosque)
+
