@@ -1,0 +1,30 @@
+library(readxl)
+library(fim4r)
+
+data <- read_excel("C:\\Users\\David\\Downloads\\base-de-datos-violencia-intrafamiliar-ano-2024_v3.xlsx")
+
+data_fp <- data[, c("HEC_MES","HEC_TIPAGRE","VIC_EDAD","VIC_ESCOLARIDAD","VIC_EST_CIV","VIC_GRUPET","VIC_TRABAJA","VIC_DEDICA")]
+reglas_fp <- fim4r(data_fp, method="fpgrowth", target="rules", supp=.2, conf=.5)
+rf <- as(reglas_fp, "data.frame")
+top3 <- subset(rf, support>=0.20 & confidence>=0.50 & lift>1.0)
+top3 <- head(top3[order(-top3$lift, -top3$support, -top3$confidence), ], 3)
+
+data_fp_s1 <- subset(data_fp, HEC_MES %in% 1:6)
+reglas_fp_s1 <- fim4r(data_fp_s1, method="fpgrowth", target="rules", supp=.2, conf=.5)
+rf_s1 <- as(reglas_fp_s1, "data.frame")
+top3_s1 <- subset(rf_s1, support>=0.20 & confidence>=0.50 & lift>1.0)
+top3_s1 <- head(top3_s1[order(-top3_s1$lift, -top3_s1$support, -top3_s1$confidence), ], 3)
+
+data_fp_s2 <- subset(data_fp, HEC_MES %in% 7:12)
+reglas_fp_s2 <- fim4r(data_fp_s2, method="fpgrowth", target="rules", supp=.2, conf=.5)
+rf_s2 <- as(reglas_fp_s2, "data.frame")
+top3_s2 <- subset(rf_s2, support>=0.20 & confidence>=0.50 & lift>1.0)
+top3_s2 <- head(top3_s2[order(-top3_s2$lift, -top3_s2$support, -top3_s2$confidence), ], 3)
+
+data_fp_a <- data[, c("HEC_MES","HEC_TIPAGRE","AGR_EDAD","AGR_ESCOLARIDAD","AGR_EST_CIV","AGR_TRABAJA","AGR_DEDICA")]
+reglas_fp_agr <- fim4r(data_fp_a, method="fpgrowth", target="rules", supp=.2, conf=.5)
+rf_agr <- as(reglas_fp_agr, "data.frame")
+top3_agr <- subset(rf_agr, support>=0.20 & confidence>=0.50 & lift>1.0)
+top3_agr <- head(top3_agr[order(-top3_agr$lift, -top3_agr$support, -top3_agr$confidence), ], 3)
+
+
